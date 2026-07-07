@@ -1,0 +1,28 @@
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+.history/
+
+# Node / Angular
+**/node_modules/
+**/dist/
+**/.angular/cache/
+npm-debug.log
+yarn-error.log
+
+# Gradle / Java
+**/.gradle/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Logs e arquivos temporários
+*.log
+.DS_Store
+Thumbs.db

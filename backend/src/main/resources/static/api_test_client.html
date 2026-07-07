@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>MesaLive — Cliente de Teste de API</title>
+  <style>
+    :root {
+      --bg: #F9F8F6;
+      --fg: #1A1A1A;
+      --muted-bg: #EBE5DE;
+      --muted-fg: #6C6863;
+      --accent: #D4AF37;
+      --font-family: 'Inter', sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-family);
+      padding: 40px;
+      line-height: 1.6;
+    }
+    header {
+      border-bottom: 1px solid var(--fg);
+      padding-bottom: 20px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      font-size: 2.2rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    section {
+      background: var(--bg);
+      border: 1px solid var(--fg);
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      margin-bottom: 20px;
+      font-weight: 400;
+      border-bottom: 1px solid rgba(26, 26, 26, 0.1);
+      padding-bottom: 10px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 15px;
+    }
+    label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(26, 26, 26, 0.3);
+      padding: 10px 0;
+      font-size: 0.9rem;
+      color: var(--fg);
+      outline: none;
+      width: 100%;
+    }
+    input:focus, select:focus {
+      border-bottom-color: var(--accent);
+    }
+    button {
+      background-color: var(--fg);
+      color: var(--bg);
+      border: none;
+      padding: 12px 24px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: var(--accent);
+      color: #fff;
+    }
+    pre {
+      background-color: var(--muted-bg);
+      padding: 15px;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      max-height: 250px;
+      border: 1px solid rgba(26, 26, 26, 0.1);
+      margin-top: 15px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .token-display {
+      word-break: break-all;
+      background: #eee;
+      padding: 8px;
+      font-size: 0.75rem;
+      margin-top: 10px;
+      border: 1px dashed var(--muted-fg);
+    }
+    .ws-connected {
+      color: green;
+      font-weight: bold;
+    }
+    .ws-disconnected {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+  <!-- SockJS and Stomp JavaScript Clients -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>MesaLive</h1>
+      <p style="font-size: 0.85rem; color: var(--muted-fg)">Painel Técnico de Testes e Simulações de API</p>
+    </div>
+    <div>
+      <span id="ws-status" class="ws-disconnected">WebSocket: Desconectado</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- COLUNA ESQUERDA: AUTENTICAÇÃO E CONFIGURAÇÕES -->
+    <div>
+      <section>
+        <h2>1. Autenticação (Login Staff)</h2>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="login-email" value="admin@mesalive.com">
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="login-senha" value="admin123">
+        </div>
+        <button onclick="login()">Autenticar</button>
+        <div class="token-display" id="token-box">Nenhum token ativo. Cole o token Bearer aqui para chamadas privadas se necessário.</div>
+      </section>
+
+      <section>
+        <h2>2. WebSocket Live Monitor</h2>
+        <button onclick="conectarWS()">Conectar WebSocket</button>
+        <button onclick="desconectarWS()" style="background-color: #ef4444; color: #fff;">Desconectar</button>
+        <pre id="ws-log">Mensagens em tempo real aparecerão aqui após a conexão...</pre>
+      </section>
+
+      <section>
+        <h2>3. Criar Reserva (Fluxo do Cliente)</h2>
+        <div class="form-group">
+          <label>ID da Mesa</label>
+          <input type="number" id="res-mesa-id" value="1">
+        </div>
+        <div class="form-group">
+          <label>Nome do Cliente</label>
+          <input type="text" id="res-nome" value="Guilherme Ferreira">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="res-tel" value="11977776666">
+        </div>
+        <div class="form-group">
+          <label>E-mail (opcional)</label>
+          <input type="email" id="res-email" value="guilherme@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label>Quantidade de Pessoas</label>
+          <input type="number" id="res-qtd" value="2">
+        </div>
+        <div class="form-group">
+          <label>Data & Hora</label>
+          <input type="datetime-local" id="res-data">
+        </div>
+        <button onclick="criarReserva()">Solicitar Reserva</button>
+        <pre id="res-output">Resultado da criação...</pre>
+      </section>
+    </div>
+
+    <!-- COLUNA DIREITA: CONSULTAS E AÇÕES DE SALÃO -->
+    <div>
+      <section>
+        <h2>4. Ações de Mesa & Reservas (Staff)</h2>
+        <div class="form-group">
+          <label>Ação</label>
+          <select id="action-type" onchange="toggleActionFields()">
+            <option value="listar-mesas">Listar Mesas (Privado)</option>
+            <option value="listar-mesas-publicas">Listar Mesas (Públicas)</option>
+            <option value="checkin">Registrar Entrada (Check-in)</option>
+            <option value="noshow">Registrar No-Show</option>
+            <option value="checkout">Liberar Mesa (Checkout/Cancelar)</option>
+            <option value="toggle-mesa">Ativar/Desativar Mesa Física</option>
+          </select>
+        </div>
+
+        <div id="field-reserva-id" style="display:none;" class="form-group">
+          <label>ID da Reserva</label>
+          <input type="number" id="action-reserva-id" value="">
+        </div>
+
+        <div id="field-mesa-id" style="display:none;" class="form-group">
+          <label>ID da Mesa</label>
+          <input type="number" id="action-mesa-id" value="">
+        </div>
+
+        <div id="field-mesa-status" style="display:none;" class="form-group">
+          <label>Mesa Ativa?</label>
+          <select id="action-mesa-status">
+            <option value="true">Sim (Ativa)</option>
+            <option value="false">Não (Inativa)</option>
+          </select>
+        </div>
+
+        <button onclick="executarAcao()">Executar Ação</button>
+        <pre id="action-output">Resposta do servidor...</pre>
+      </section>
+
+      <section>
+        <h2>5. Cadastrar Staff (Exclusivo Gerente)</h2>
+        <div class="form-group">
+          <label>Nome Completo</label>
+          <input type="text" id="staff-nome" value="Roberto Garçom">
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="staff-email" value="roberto@mesalive.com">
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="staff-senha" value="senhaSegura123">
+        </div>
+        <div class="form-group">
+          <label>Papel (Role)</label>
+          <select id="staff-role">
+            <option value="GARCOM">Garçom</option>
+            <option value="GERENTE">Gerente</option>
+          </select>
+        </div>
+        <button onclick="cadastrarStaff()">Registrar Funcionário</button>
+        <pre id="staff-output">Resultado do cadastro...</pre>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    let jwtToken = localStorage.getItem("mesalive_test_token") || "";
+    let stompClient = null;
+
+    if (jwtToken) {
+      document.getElementById("token-box").innerText = "Token ativo: " + jwtToken.substring(0, 30) + "...";
+    }
+
+    // Configurar campo de data hora padrão futura
+    const dateInput = document.getElementById("res-data");
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 1);
+    futureDate.setHours(20, 0, 0, 0);
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(futureDate - tzoffset)).toISOString().slice(0, 16);
+    dateInput.value = localISOTime;
+
+    function getHeaders() {
+      const headers = { "Content-Type": "application/json" };
+      if (jwtToken) {
+        headers["Authorization"] = "Bearer " + jwtToken;
+      }
+      return headers;
+    }
+
+    async function login() {
+      const email = document.getElementById("login-email").value;
+      const senha = document.getElementById("login-senha").value;
+      
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, senha })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          jwtToken = data.token;
+          localStorage.setItem("mesalive_test_token", jwtToken);
+          document.getElementById("token-box").innerText = "Token ativo: " + jwtToken.substring(0, 30) + "...";
+          alert("Autenticado com sucesso!");
+        } else {
+          document.getElementById("token-box").innerText = "Erro: " + data.message;
+        }
+      } catch (e) {
+        document.getElementById("token-box").innerText = "Erro ao conectar com o servidor.";
+      }
+    }
+
+    async function criarReserva() {
+      const mesaId = parseInt(document.getElementById("res-mesa-id").value);
+      const nomeCliente = document.getElementById("res-nome").value;
+      const telefoneCliente = document.getElementById("res-tel").value;
+      const emailCliente = document.getElementById("res-email").value;
+      const quantidadePessoas = parseInt(document.getElementById("res-qtd").value);
+      const localTime = document.getElementById("res-data").value;
+      
+      const dataHora = new Date(localTime).toISOString();
+
+      try {
+        const res = await fetch("/api/reservas", {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ mesaId, nomeCliente, telefoneCliente, emailCliente, quantidadePessoas, dataHora })
+        });
+        const data = await res.json();
+        document.getElementById("res-output").innerText = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("res-output").innerText = "Erro ao efetuar requisição.";
+      }
+    }
+
+    function toggleActionFields() {
+      const type = document.getElementById("action-type").value;
+      document.getElementById("field-reserva-id").style.display = (type === 'checkin' || type === 'noshow' || type === 'checkout') ? 'block' : 'none';
+      document.getElementById("field-mesa-id").style.display = (type === 'toggle-mesa') ? 'block' : 'none';
+      document.getElementById("field-mesa-status").style.display = (type === 'toggle-mesa') ? 'block' : 'none';
+    }
+
+    async function executarAcao() {
+      const type = document.getElementById("action-type").value;
+      let url = "";
+      let method = "GET";
+      let body = null;
+
+      if (type === 'listar-mesas') {
+        url = "/api/mesas";
+      } else if (type === 'listar-mesas-publicas') {
+        url = "/api/mesas/publicas";
+      } else if (type === 'checkin') {
+        const id = document.getElementById("action-reserva-id").value;
+        url = `/api/reservas/${id}/status`;
+        method = "PATCH";
+        body = JSON.stringify({ status: "CLIENTE_CHEGOU" });
+      } else if (type === 'noshow') {
+        const id = document.getElementById("action-reserva-id").value;
+        url = `/api/reservas/${id}/status`;
+        method = "PATCH";
+        body = JSON.stringify({ status: "NO_SHOW" });
+      } else if (type === 'checkout') {
+        const id = document.getElementById("action-reserva-id").value;
+        url = `/api/reservas/${id}/status`;
+        method = "PATCH";
+        body = JSON.stringify({ status: "CANCELADA" });
+      } else if (type === 'toggle-mesa') {
+        const id = document.getElementById("action-mesa-id").value;
+        url = `/api/mesas/${id}/status`;
+        method = "PATCH";
+        body = JSON.stringify({ ativo: document.getElementById("action-mesa-status").value === "true" });
+      }
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: getHeaders(),
+          body
+        });
+        const data = await res.json();
+        document.getElementById("action-output").innerText = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("action-output").innerText = "Erro ao executar a ação.";
+      }
+    }
+
+    async function cadastrarStaff() {
+      const nome = document.getElementById("staff-nome").value;
+      const email = document.getElementById("staff-email").value;
+      const senha = document.getElementById("staff-senha").value;
+      const role = document.getElementById("staff-role").value;
+
+      try {
+        const res = await fetch("/api/usuarios", {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ nome, email, senha, role })
+        });
+        const data = await res.json();
+        document.getElementById("staff-output").innerText = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("staff-output").innerText = "Erro ao efetuar requisição.";
+      }
+    }
+
+    // WEBSOCKET LOGIC
+    function conectarWS() {
+      desconectarWS();
+
+      const socket = new SockJS("/ws");
+      stompClient = Stomp.over(socket);
+
+      // Disable console debug logs from stomp
+      stompClient.debug = null;
+
+      stompClient.connect({}, function (frame) {
+        const statusEl = document.getElementById("ws-status");
+        statusEl.innerText = "WebSocket: Conectado";
+        statusEl.className = "ws-connected";
+        
+        document.getElementById("ws-log").innerText = "Conectado ao canal /topic/salao! Aguardando modificações...\n";
+
+        stompClient.subscribe("/topic/salao", function (message) {
+          const logEl = document.getElementById("ws-log");
+          const payload = JSON.parse(message.body);
+          logEl.innerText = `[WS Event - ${new Date().toLocaleTimeString()}]\n` + JSON.stringify(payload, null, 2) + "\n\n" + logEl.innerText;
+        });
+      }, function (error) {
+        const statusEl = document.getElementById("ws-status");
+        statusEl.innerText = "WebSocket: Erro";
+        statusEl.className = "ws-disconnected";
+      });
+    }
+
+    function desconectarWS() {
+      if (stompClient !== null) {
+        stompClient.disconnect();
+        stompClient = null;
+      }
+      const statusEl = document.getElementById("ws-status");
+      statusEl.innerText = "WebSocket: Desconectado";
+      statusEl.className = "ws-disconnected";
+    }
+  </script>
+</body>
+</html>
