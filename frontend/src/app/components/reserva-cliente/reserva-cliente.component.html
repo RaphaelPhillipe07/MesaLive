@@ -1,0 +1,255 @@
+<div class="booking-wrapper">
+  <!-- HEADER DO CLIENTE -->
+  <header class="app-header">
+    <div class="brand">
+      <h1>MesaLive <span class="badge-tag">RESERVAS</span></h1>
+    </div>
+    <button class="btn-clean btn-outline btn-sm" (click)="router.navigate(['/login'])">
+      Área Staff
+    </button>
+  </header>
+
+  <main class="booking-main">
+    <!-- HERO TITLE -->
+    <section class="hero-section">
+      <h2 class="hero-title">Sua mesa perfeita, <br><span class="highlight">em tempo real.</span></h2>
+      <p class="hero-subtitle">
+        Escolha o horário, selecione visualmente sua mesa preferida no salão e confirme seu agendamento instantaneamente.
+      </p>
+    </section>
+
+    <!-- CARD CONTAINER -->
+    <section class="booking-card-box">
+      <!-- ABA NAVEGAÇÃO -->
+      <div class="nav-tabs">
+        <button 
+          class="tab-item" 
+          [class.active]="activeTab() === 'nova'" 
+          (click)="setTab('nova')"
+        >
+          Nova Reserva
+        </button>
+        <button 
+          class="tab-item" 
+          [class.active]="activeTab() === 'minha'" 
+          (click)="setTab('minha')"
+        >
+          Consultar / Cancelar
+        </button>
+      </div>
+
+      <!-- TAB 1: NOVA RESERVA -->
+      <div class="tab-pane animate-fade" *ngIf="activeTab() === 'nova'">
+        <form (ngSubmit)="onSubmitReserva()" *ngIf="!createdBooking()" class="booking-form">
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label for="nome">Seu Nome Completo *</label>
+              <input 
+                type="text" 
+                id="nome" 
+                class="form-control"
+                name="nome"
+                [(ngModel)]="booking.nomeCliente" 
+                required 
+                placeholder="Ex: Carlos Eduardo"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="telefone">WhatsApp / Telefone *</label>
+              <input 
+                type="tel" 
+                id="telefone" 
+                class="form-control"
+                name="telefone"
+                [(ngModel)]="booking.telefoneCliente" 
+                required 
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="email">E-mail (Para confirmação)</label>
+              <input 
+                type="email" 
+                id="email" 
+                class="form-control"
+                name="email"
+                [(ngModel)]="booking.emailCliente" 
+                placeholder="carlos@exemplo.com"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="pessoas">Nº de Convidados</label>
+              <input 
+                type="number" 
+                id="pessoas" 
+                class="form-control"
+                name="pessoas"
+                [(ngModel)]="booking.quantidadePessoas" 
+                required 
+                min="1" 
+                max="20"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="dataHora">Data & Horário *</label>
+              <input 
+                type="datetime-local" 
+                id="dataHora" 
+                class="form-control"
+                name="dataHora"
+                [(ngModel)]="booking.dataHora" 
+                required
+              />
+            </div>
+          </div>
+
+          <!-- SELETOR VISUAL DE MESAS -->
+          <div class="mesa-selector-section">
+            <label class="section-label">Selecione a Mesa Desejada no Salão *</label>
+            <div class="tables-grid">
+              <div 
+                *ngFor="let mesa of mesasDisponiveis()" 
+                class="table-tile"
+                [class.selected]="booking.mesaId === mesa.id"
+                (click)="selecionarMesa(mesa.id)"
+              >
+                <div class="table-info">
+                  <span class="table-title">{{ mesa.numero }}</span>
+                  <span class="table-seats">Até {{ mesa.capacidade }} pessoas</span>
+                </div>
+                <div class="check-mark" *ngIf="booking.mesaId === mesa.id">✓</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert-box alert-error" *ngIf="errorMessage()">
+            {{ errorMessage() }}
+          </div>
+
+          <button type="submit" class="btn-clean btn-primary btn-submit-large" [disabled]="isLoading()">
+            <span *ngIf="!isLoading()">Confirmar Reserva</span>
+            <span *ngIf="isLoading()" class="spinner-sm"></span>
+          </button>
+        </form>
+
+        <!-- CARD DE CONFIRMAÇÃO -->
+        <div class="success-card-clean animate-fade" *ngIf="createdBooking()">
+          <div class="success-header">
+            <h3>{{ successMessage() }}</h3>
+            <p class="booking-code">Código de Confirmação: <strong>#{{ createdBooking()?.id }}</strong></p>
+          </div>
+
+          <div class="booking-details-grid">
+            <div class="detail-cell">
+              <span class="cell-label">Cliente</span>
+              <span class="cell-val">{{ createdBooking()?.cliente?.nome }}</span>
+            </div>
+            <div class="detail-cell">
+              <span class="cell-label">Mesa Reservada</span>
+              <span class="cell-val">{{ createdBooking()?.mesa?.numero }}</span>
+            </div>
+            <div class="detail-cell">
+              <span class="cell-label">Data e Hora</span>
+              <span class="cell-val">{{ formatDate(createdBooking()?.dataHora) }}</span>
+            </div>
+            <div class="detail-cell">
+              <span class="cell-label">Pessoas</span>
+              <span class="cell-val">{{ createdBooking()?.quantidadePessoas }} convidados</span>
+            </div>
+          </div>
+
+          <div class="notice-box">
+            Guarde o código <strong>#{{ createdBooking()?.id }}</strong> e o telefone <strong>{{ createdBooking()?.cliente?.telefone }}</strong> para consultar ou cancelar sua reserva quando quiser.
+          </div>
+
+          <button class="btn-clean btn-outline" (click)="createdBooking.set(null)">
+            Fazer Outra Reserva
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: CONSULTAR / CANCELAR RESERVA -->
+      <div class="tab-pane animate-fade" *ngIf="activeTab() === 'minha'">
+        <div class="lookup-form">
+          <div class="form-row">
+            <div class="form-field">
+              <label for="lookupId">Código da Reserva (#)</label>
+              <input 
+                type="number" 
+                id="lookupId" 
+                class="form-control"
+                [(ngModel)]="lookup.id" 
+                placeholder="Ex: 5"
+              />
+            </div>
+            <div class="form-field">
+              <label for="lookupTel">Telefone Cadastrado</label>
+              <input 
+                type="text" 
+                id="lookupTel" 
+                class="form-control"
+                [(ngModel)]="lookup.telefone" 
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+          </div>
+
+          <button class="btn-clean btn-primary" (click)="onConsultar()" [disabled]="isLoading()">
+            <span *ngIf="!isLoading()">Buscar Reserva</span>
+            <span *ngIf="isLoading()" class="spinner-sm"></span>
+          </button>
+        </div>
+
+        <div class="alert-box alert-error" *ngIf="errorMessage()">
+          {{ errorMessage() }}
+        </div>
+
+        <!-- RESULTADO DA CONSULTA -->
+        <div class="booking-result-card animate-fade" *ngIf="searchedBooking()">
+          <div class="result-header">
+            <h3>Reserva #{{ searchedBooking()?.id }}</h3>
+            <span class="badge-status" [ngClass]="searchedBooking()?.status?.toLowerCase() || ''">
+              {{ searchedBooking()?.status }}
+            </span>
+          </div>
+
+          <div class="booking-details-grid">
+            <div class="detail-cell">
+              <span class="cell-label">Cliente</span>
+              <span class="cell-val">{{ searchedBooking()?.cliente?.nome }}</span>
+            </div>
+            <div class="detail-cell">
+              <span class="cell-label">Mesa</span>
+              <span class="cell-val">{{ searchedBooking()?.mesa?.numero }}</span>
+            </div>
+            <div class="detail-cell">
+              <span class="cell-label">Data e Hora</span>
+              <span class="cell-val">{{ formatDate(searchedBooking()?.dataHora) }}</span>
+            </div>
+            <div class="detail-cell">
+              <span class="cell-label">Convidados</span>
+              <span class="cell-val">{{ searchedBooking()?.quantidadePessoas }}</span>
+            </div>
+          </div>
+
+          <div class="action-bar" *ngIf="searchedBooking()?.status === 'CONFIRMADA'">
+            <button 
+              class="btn-clean btn-danger" 
+              (click)="onCancelar(searchedBooking()!.id, searchedBooking()!.cliente.telefone)"
+            >
+              Cancelar Reserva
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+</div>

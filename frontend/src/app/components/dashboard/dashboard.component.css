@@ -1,0 +1,281 @@
+.dashboard-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-app);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-greeting {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+.btn-xs {
+  padding: 6px 10px;
+  font-size: 0.775rem;
+}
+
+.dashboard-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Stats Row */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-card);
+  border: 2px solid var(--border-color);
+  border-bottom-width: 5px;
+  transition: transform 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card.total { border-bottom-color: var(--primary); }
+.stat-card.livre { border-bottom-color: var(--accent-green); }
+.stat-card.reservada { border-bottom-color: var(--primary); }
+.stat-card.ocupada { border-bottom-color: var(--accent-red); }
+.stat-card.noshow { border-bottom-color: var(--accent-gold); }
+
+.stat-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.stat-val {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+/* Manager Card */
+.manager-card {
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+  border: 2px solid var(--border-color);
+  border-bottom-width: 5px;
+  border-bottom-color: var(--primary);
+}
+
+.card-header-clean {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.card-header-clean h2 {
+  font-size: 1.25rem;
+}
+
+.badge-role {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.manager-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.btn-submit {
+  align-self: flex-start;
+}
+
+/* Section Title Row */
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section-title-row h2 {
+  font-size: 1.4rem;
+}
+
+.polling-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Mesas Grid */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.mesa-card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  border: 2px solid var(--border-color);
+  border-bottom-width: 5px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.mesa-card:hover {
+  transform: translateY(-3px);
+}
+
+.mesa-card.livre { border-bottom-color: var(--accent-green); }
+.mesa-card.reservada { border-bottom-color: var(--primary); }
+.mesa-card.ocupada { border-bottom-color: var(--accent-red); }
+.mesa-card.no_show { border-bottom-color: var(--accent-gold); }
+.mesa-card.inativa { border-bottom-color: #cbd5e1; opacity: 0.75; }
+
+.mesa-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mesa-number {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.mesa-capacity {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.mesa-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reserva-info-box {
+  background-color: var(--bg-subtle);
+  border-radius: var(--r-md);
+  padding: 12px;
+  font-size: 0.875rem;
+}
+
+.reserva-info-box.empty {
+  color: #047857;
+  font-weight: 600;
+  background-color: var(--accent-green-bg);
+}
+
+.reserva-info-box.inactive {
+  color: var(--text-subtle);
+  font-weight: 600;
+}
+
+.cliente-name {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.reserva-time {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.mesa-card-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-toggle {
+  margin-left: auto;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 30px;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-muted);
+}

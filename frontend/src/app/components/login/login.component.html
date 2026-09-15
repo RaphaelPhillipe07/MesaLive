@@ -1,0 +1,54 @@
+<div class="login-wrapper">
+  <div class="login-card-clean animate-fade">
+    <div class="login-header">
+      <span class="app-logo">MesaLive</span>
+      <h2>Acesso Staff</h2>
+      <p class="subtitle">Painel de gerenciamento de mesas e atendimento</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-field">
+        <label for="email">E-mail Corporativo</label>
+        <input 
+          type="email" 
+          id="email" 
+          class="form-control"
+          name="email"
+          [(ngModel)]="credentials.email" 
+          required 
+          placeholder="exemplo@mesalive.com"
+          [disabled]="isLoading()"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="password">Senha de Acesso</label>
+        <input 
+          type="password" 
+          id="password" 
+          class="form-control"
+          name="password"
+          [(ngModel)]="credentials.senha" 
+          required 
+          placeholder="••••••••"
+          [disabled]="isLoading()"
+        />
+      </div>
+
+      <div class="alert-box alert-error" *ngIf="errorMessage()">
+        {{ errorMessage() }}
+      </div>
+
+      <button type="submit" [disabled]="isLoading()" class="btn-clean btn-primary btn-login-submit">
+        <span *ngIf="!isLoading()">Entrar no Painel</span>
+        <span *ngIf="isLoading()" class="spinner-sm"></span>
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <button class="btn-clean btn-outline btn-xs" (click)="router.navigate(['/'])">
+        ← Voltar para Reservas de Clientes
+      </button>
+    </div>
+  </div>
+</div>

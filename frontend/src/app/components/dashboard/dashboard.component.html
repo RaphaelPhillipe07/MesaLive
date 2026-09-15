@@ -1,0 +1,188 @@
+<div class="dashboard-wrapper">
+  <!-- HEADER DO PAINEL -->
+  <header class="app-header">
+    <div class="brand">
+      <h1>MesaLive <span class="badge-tag">PAINEL STAFF</span></h1>
+    </div>
+    
+    <div class="user-info">
+      <span class="user-greeting">Olá, <strong>{{ usuario()?.nome }}</strong> ({{ usuario()?.role }})</span>
+      <button class="btn-clean btn-outline btn-sm" (click)="carregarDados()" title="Recarregar salão">
+        Atualizar
+      </button>
+      <button class="btn-clean btn-danger btn-sm" (click)="logout()">
+        Sair
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <!-- ESTATÍSTICAS DO SALÃO -->
+    <section class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-info">
+          <span class="stat-label">Total de Mesas</span>
+          <span class="stat-val">{{ countTotal() }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card livre">
+        <div class="stat-info">
+          <span class="stat-label">Livres</span>
+          <span class="stat-val">{{ countLivre() }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card reservada">
+        <div class="stat-info">
+          <span class="stat-label">Reservadas</span>
+          <span class="stat-val">{{ countReservada() }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card ocupada">
+        <div class="stat-info">
+          <span class="stat-label">Ocupadas</span>
+          <span class="stat-val">{{ countOcupada() }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card noshow">
+        <div class="stat-info">
+          <span class="stat-label">No-Show</span>
+          <span class="stat-val">{{ countNoShow() }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÁREA DO GERENTE: CADASTRAR FUNCIONÁRIO -->
+    <section class="manager-card animate-fade" *ngIf="usuario()?.role === 'GERENTE'">
+      <div class="card-header-clean">
+        <h2>Cadastrar Novo Funcionário</h2>
+        <span class="badge-role">Exclusivo Gerente</span>
+      </div>
+
+      <form (ngSubmit)="cadastrarStaff()" class="manager-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="reg-nome">Nome Completo</label>
+            <input type="text" id="reg-nome" class="form-control" name="nome" [(ngModel)]="newUser.nome" required placeholder="Ex: Maria Souza" />
+          </div>
+          <div class="form-field">
+            <label for="reg-email">E-mail Corporativo</label>
+            <input type="email" id="reg-email" class="form-control" name="email" [(ngModel)]="newUser.email" required placeholder="maria@mesalive.com" />
+          </div>
+          <div class="form-field">
+            <label for="reg-senha">Senha</label>
+            <input type="password" id="reg-senha" class="form-control" name="senha" [(ngModel)]="newUser.senha" required placeholder="••••••••" />
+          </div>
+          <div class="form-field">
+            <label for="reg-role">Papel</label>
+            <select id="reg-role" class="form-control" name="role" [(ngModel)]="newUser.role" required>
+              <option value="GARCOM">Garçom</option>
+              <option value="GERENTE">Gerente</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="alerts" *ngIf="registrationSuccess || registrationError">
+          <div class="alert-box alert-success" *ngIf="registrationSuccess">{{ registrationSuccess }}</div>
+          <div class="alert-box alert-error" *ngIf="registrationError">{{ registrationError }}</div>
+        </div>
+
+        <button type="submit" class="btn-clean btn-primary btn-submit" [disabled]="isRegistering">
+          <span *ngIf="!isRegistering">Cadastrar Staff</span>
+          <span *ngIf="isRegistering" class="spinner-sm"></span>
+        </button>
+      </form>
+    </section>
+
+    <!-- MAPA DE MESAS -->
+    <section class="mesas-section">
+      <div class="section-title-row">
+        <h2>Mapa de Mesas do Salão</h2>
+        <span class="polling-indicator">
+          <span class="pulse-dot"></span> Sincronizado a cada 8s
+        </span>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading-state" *ngIf="isLoading() && mesas().length === 0">
+        <div class="spinner-sm"></div>
+        <p>Carregando mesas do salão...</p>
+      </div>
+
+      <!-- GRID DE CARDS DAS MESAS -->
+      <div class="mesas-grid" *ngIf="mesas().length > 0">
+        <div 
+          class="mesa-card" 
+          *ngFor="let mesa of mesas()"
+          [ngClass]="mesa.statusAtual.toLowerCase()"
+        >
+          <div class="mesa-card-header">
+            <span class="mesa-number">{{ mesa.numero }}</span>
+            <span class="mesa-capacity">{{ mesa.capacidade }} lugares</span>
+          </div>
+
+          <div class="mesa-card-body">
+            <div class="status-row">
+              <span class="badge-status" [ngClass]="mesa.statusAtual.toLowerCase()">
+                {{ mesa.statusAtual }}
+              </span>
+            </div>
+
+            <!-- Reserva Ativa -->
+            <div class="reserva-info-box" *ngIf="mesa.reservaAtivaId">
+              <p class="cliente-name">Cliente: {{ mesa.nomeCliente }}</p>
+              <p class="reserva-time">Horário: <strong>{{ formatHour(mesa.dataHoraReserva) }}</strong></p>
+            </div>
+
+            <div class="reserva-info-box empty" *ngIf="!mesa.reservaAtivaId && mesa.ativo">
+              Mesa disponível no salão
+            </div>
+
+            <div class="reserva-info-box inactive" *ngIf="!mesa.ativo">
+              Fora de serviço
+            </div>
+          </div>
+
+          <!-- Ações Rápidas do Garçom / Gerente -->
+          <div class="mesa-card-footer">
+            <ng-container *ngIf="mesa.ativo && mesa.reservaAtivaId">
+              <button 
+                *ngIf="mesa.statusAtual === 'RESERVADA'" 
+                class="btn-clean btn-primary btn-xs" 
+                (click)="marcarEntrada(mesa.reservaAtivaId, mesa.id)"
+              >
+                Entrada
+              </button>
+              
+              <button 
+                *ngIf="mesa.statusAtual === 'RESERVADA'" 
+                class="btn-clean btn-outline btn-xs" 
+                (click)="marcarNoShow(mesa.reservaAtivaId, mesa.id)"
+              >
+                No-Show
+              </button>
+
+              <button 
+                *ngIf="mesa.statusAtual === 'OCUPADA' || mesa.statusAtual === 'NO_SHOW'" 
+                class="btn-clean btn-danger btn-xs" 
+                (click)="liberarMesa(mesa.reservaAtivaId, mesa.id)"
+              >
+                Liberar
+              </button>
+            </ng-container>
+
+            <button 
+              class="btn-clean btn-outline btn-xs btn-toggle" 
+              (click)="toggleAtivo(mesa)"
+            >
+              {{ mesa.ativo ? 'Desativar' : 'Reativar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
