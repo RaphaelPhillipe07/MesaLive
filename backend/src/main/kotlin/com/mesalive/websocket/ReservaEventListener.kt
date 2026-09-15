@@ -1,5 +1,7 @@
 package com.mesalive.websocket
 
+// WebSocket listener disabled - switched to Smart Polling architecture
+/*
 import com.mesalive.event.ReservaAlteradaEvent
 import com.mesalive.mapper.toDTO
 import org.springframework.context.event.EventListener
@@ -17,3 +19,4 @@ class ReservaEventListener(
         messagingTemplate.convertAndSend("/topic/salao", dto)
     }
 }
+*/
