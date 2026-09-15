@@ -1,4 +1,4 @@
-  # Listagem de Features do Sistema  
+# Listagem de Features do Sistema  
 
 Este documento descreve as funcionalidades implementadas no **MesaLive** e suas respectivas regras de validação.
 
@@ -6,14 +6,14 @@ Este documento descreve as funcionalidades implementadas no **MesaLive** e suas 
 
 ## 1. Área do Cliente (Autoatendimento)
 
-### Feature 1.1: Solicitação de Nova Reserva
-* **Descrição:** O cliente escolhe uma data, horário, mesa específica e a quantidade de pessoas para agendar um almoço/jantar.
+### Feature 1.1: Solicitação de Nova Reserva (Seletor Visual de Mesas)
+* **Descrição:** O cliente escolhe uma data, horário, quantidade de pessoas e seleciona visualmente sua mesa preferida em um **grid interativo de cards de mesas**.
 * **Regras de Negócio e Validações:**
   * Nome do cliente e telefone de contato são campos obrigatórios.
   * A data e hora da reserva devem estar obrigatoriamente no futuro.
   * O número de pessoas deve ser no mínimo 1 e não pode ultrapassar a capacidade máxima cadastrada na mesa selecionada.
   * A mesa desejada deve estar ativa para receber reservas.
-  * **Prevenção de Conflitos:** O sistema impede reservas na mesma mesa caso já exista outra reserva confirmada em uma janela de 90 minutos de distância (para mais ou para menos).
+  * **Prevenção de Conflitos:** O sistema impede reservas na mesma mesa caso já exista outra reserva confirmada em uma janela de segurança de distância.
 
 ### Feature 1.2: Consulta de Reserva Existente
 * **Descrição:** Permite ao cliente conferir os detalhes de seu agendamento.
@@ -25,28 +25,28 @@ Este documento descreve as funcionalidades implementadas no **MesaLive** e suas 
 * **Descrição:** Dá autonomia para o cliente cancelar seu compromisso.
 * **Regras de Negócio:**
   * Exige a validação do código de reserva e do telefone cadastrado.
-  * Altera o status da reserva para `CANCELADA`, liberando imediatamente a mesa para outros agendamentos e enviando um alerta ao painel do staff.
+  * Altera o status da reserva para `CANCELADA`, liberando imediatamente a mesa para outros agendamentos.
 
 ---
 
 ## 2. Área do Staff (Gerenciamento do Salão)
 
 ### Feature 2.1: Autenticação Administrativa (Staff Login)
-* **Descrição:** Acesso protegido por credenciais de funcionários.
+* **Descrição:** Acesso protegido por credenciais de funcionários com injeção automática de token Bearer via `HttpInterceptor`.
 * **Regras de Negócio:**
   * Acesso restrito via autenticação stateless JWT.
   * As senhas dos usuários são armazenadas em hash BCrypt altamente seguro.
   * A API valida os papéis (`Role`) e garante acesso apenas a perfis autorizados (`GERENTE` ou `GARCOM`).
 
-### Feature 2.2: Mapa do Salão em Tempo Real
-* **Descrição:** Grade interativa contendo todas as mesas do restaurante e seus respectivos status calculados ao vivo.
+### Feature 2.2: Mapa do Salão com Smart Polling & UI Otimista
+* **Descrição:** Grade interativa contendo todas as mesas do restaurante e seus respectivos status atualizados via polling de 8s (com pausa inteligente quando a aba é minimizada).
 * **Estados Visuais das Mesas:**
   * **Livre:** Mesa sem nenhuma reserva confirmada na janela de horário corrente.
-  * **Reservada:** Mesa com reserva confirmada para o horário atual ou nos próximos 30 minutos.
+  * **Reservada:** Mesa com reserva confirmada para o horário atual ou próximo.
   * **Ocupada:** Clientes ativos no local (marcado check-in).
-  * **No-Show:** O horário da reserva passou há mais de 15 minutos e os clientes não compareceram.
-  * **Inativa:** Mesa fora de serviço (manutenção, faxina ou reserva especial).
-* **Atualização Reativa (WebSockets):** Qualquer mudança efetuada por um funcionário ou cancelamento de cliente atualiza o salão de todos os funcionários conectados instantaneamente sem recarregar a tela.
+  * **No-Show:** O horário da reserva passou da tolerância e os clientes não compareceram.
+  * **Inativa:** Mesa fora de serviço.
+* **Respostas Otimistas:** Qualquer ação executada pelo garçom/gerente altera o estado visual da mesa instantaneamente (< 10ms), sincronizando a alteração com a API REST em segundo plano.
 
 ### Feature 2.3: Registro de Entrada (Check-in de Cliente)
 * **Descrição:** Marca a chegada dos clientes no restaurante.
@@ -65,49 +65,35 @@ Este documento descreve as funcionalidades implementadas no **MesaLive** e suas 
   * Altera o status da reserva ativa para `CANCELADA` (ou finalizado), retornando a mesa ao estado de **Livre** no painel imediatamente.
 
 ### Feature 2.6: Controle de Atividade de Mesas (Manutenção)
-* **Descrição:** Permite desativar temporariamente mesas físicas por motivos operacionais (ex: limpeza ou quebra de cadeiras).
+* **Descrição:** Permite desativar temporariamente mesas físicas por motivos operacionais (ex: limpeza ou manutenção).
 * **Regras de Negócio:**
   * Ao desativar uma mesa, ela assume o status **Inativa** e deixa de aparecer na lista pública de mesas do cliente, impedindo novos agendamentos nela.
+
+### Feature 2.7: Cadastro de Staff pelo Gerente
+* **Descrição:** Painel exclusivo na tela do Gerente para cadastrar novos garçons e gerentes diretamente pelo sistema.
+* **Regras de Negócio:**
+  * Exige role `GERENTE`.
+  * Valida duplicidade de e-mail e salva a senha criptografada via BCrypt.
 
 ---
 
 ## 3. Recursos de Infraestrutura e Documentação
 
 ### Feature 3.1: Migrations Automáticas e Seed Data
-* **Descrição:** Criação da estrutura de tabelas e injeção automática de dados de teste (6 mesas e 2 contas administrativas de funcionários) no primeiro boot da aplicação.
+* **Descrição:** Criação da estrutura de tabelas e injeção automática de dados de teste (mesas e contas administrativas) no boot da aplicação via Flyway.
 
 ### Feature 3.2: Documentação de API Interativa (OpenAPI/Swagger)
-* **Descrição:** Documentação automática contendo a listagem de todos os controllers HTTP e esquemas de dados da aplicação exposta na rota: `http://localhost:8080/swagger-ui.html`.
+* **Descrição:** Documentação automática contendo a listagem de todos os controllers HTTP e esquemas de dados exposta na rota: `http://localhost:8080/swagger-ui.html`.
 
 ---
 
 ## 4. Roadmap (Features Futuras)
 
-### Feature 4.1: Pedidos por Mesa (Ordens de Consumo)
+### Feature 4.1: Termômetro de Ocupação "Live" e Feed de Eventos
+* **Descrição:** Exibição do percentual de ocupação ao vivo na página do cliente e feed com a linha do tempo de eventos recentes do salão no painel do staff.
+
+### Feature 4.2: Pedidos por Mesa (Ordens de Consumo)
 * **Descrição:** Vincula o consumo de pratos e bebidas à mesa ocupada.
-* **Regras de Negócio Planejadas:**
-  * Lançamento de itens do cardápio diretamente na conta da mesa (efetuado por garçons ou via QR Code pelo cliente).
-  * O status da mesa `OCUPADA` exibe o valor acumulado em tempo real.
-  * O encerramento/checkout da mesa exige a conferência e fechamento da conta de consumo.
 
-### Feature 4.2: Gestão de Mesas Físicas (Cadastro e Edição - CRUD)
-* **Descrição:** Permite ao Gerente gerenciar o layout físico do salão diretamente pelo painel.
-* **Regras de Negócio Planejadas:**
-  * Criação de novas mesas especificando número único e capacidade de assentos.
-  * Edição de capacidade de mesas existentes (bloqueada se houver reservas confirmadas ativas na mesa).
-  * Exclusão lógica ou física de mesas do restaurante.
-
-### Feature 4.3: Compartilhar Comandas e Observações entre Garçons (WSS)
-* **Descrição:** Compartilhamento em tempo real de notas, observações e alterações de comandas de mesa entre toda a equipe ativa de garçons via WebSockets.
-* **Regras de Negócio Planejadas:**
-  * Adicionar observações rápidas a uma mesa (ex: "cliente alérgico a camarão", "esperando acompanhante").
-  * Sincronização em tempo real de mensagens de chat ou avisos operacionais entre os dispositivos do staff logados.
-  * Atualização instantânea de qualquer alteração de itens na comanda.
-
-### Feature 4.4: Painel KDS para Cozinha
-* **Descrição:** Tela dedicada para a equipe da cozinha/copa acompanhar os pedidos lançados nas mesas em tempo real.
-* **Regras de Negócio Planejadas:**
-  * Divisão de pedidos por status (na fila, preparando, pronto para entrega).
-  * Garçom recebe notificação instantânea quando o prato da mesa é marcado como "pronto".
-
-
+### Feature 4.3: Gestão de Mesas Físicas (CRUD pelo Painel)
+* **Descrição:** Permite ao Gerente cadastrar novas mesas, alterar capacidade de assentos e configurar layouts físicos diretamente pela interface.
