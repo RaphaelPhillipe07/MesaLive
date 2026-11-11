@@ -55,8 +55,8 @@ Com o MesaLive:
 
 ## 🛠️ Stack Tecnológica
 
-### Backend (Java 17 + Kotlin)
-* **Spring Boot 3.x** & **Spring Security** (Segurança stateless baseada em JWT).
+### Backend (Java 21 + Kotlin)
+* **Spring Boot 4.x** & **Spring Security** (Segurança stateless baseada em JWT).
 * **Spring Data JPA** & **Hibernate** (Mapeamento objeto-relacional).
 * **PostgreSQL 15** (Persistência e integridade referencial de dados).
 * **Flyway Migration** (Gerenciamento de histórico de banco de dados).
@@ -86,7 +86,7 @@ O sistema implementa uma **Arquitetura em Camadas** com uma separação lógica 
 
 ### Pré-requisitos
 * Ter o **Docker** e **Docker Desktop** rodando.
-* Ter o **JDK 17** instalado.
+* Ter o **JDK 21** instalado (o build usa toolchain 21; o `foojay-resolver` provisiona a JDK se ela não existir).
 * Ter o **Node.js** e **npm** instalados.
 
 ### Passo 1: Subir o Banco de Dados (Docker)
@@ -104,6 +104,18 @@ cd backend
 ```
 * O backend rodará em `http://localhost:8080`.
 * Documentação das APIs (Swagger): `http://localhost:8080/swagger-ui.html`.
+
+#### Variáveis de ambiente do backend
+
+O perfil ativo por padrão é `dev` (segredo JWT de desenvolvimento, SQL logado). Para produção use `prod`.
+
+| Variável | Padrão (dev) | Descrição |
+| :--- | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | `dev` | `dev` ou `prod`. Em `prod` o `JWT_SECRET` é obrigatório. |
+| `JWT_SECRET` | segredo de dev | Chave HS256, **mínimo 32 caracteres**. Obrigatória fora de `dev`. |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/mesalive` | URL JDBC. |
+| `DB_USER` / `DB_PASSWORD` | `postgres` / `postgres` | Credenciais do banco. |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` | Origens permitidas, separadas por vírgula. |
 
 ### Passo 3: Executar o Frontend (Angular)
 Em outro terminal, acesse a pasta `frontend/` e inicie o servidor:
@@ -158,14 +170,15 @@ MesaLive/
 │   │   └── service/         # Interfaces e Lógicas de Negócio
 │   └── src/main/resources/
 │       ├── db/migration/    # Scripts SQL do Flyway
-│       └── application.properties
+│       ├── application.properties      # Configuração base
+│       ├── application-dev.properties  # Perfil local (SQL logado, segredo de dev)
+│       └── application-prod.properties # Perfil de produção
 ├── frontend/
 │   └── src/app/
 │       ├── components/      # Componentes (ReservaCliente, Login, Dashboard)
 │       ├── interceptors/    # HttpInterceptor para autorização Bearer JWT
 │       ├── models/          # Interfaces TypeScript (Mesa, Reserva, Usuario)
 │       └── services/        # Consumo de APIs REST e Auth com Signals
-├── presentation/            # Referência de Design System, tokens e guias visuais
 ├── docs/                    # Documentação oficial de Arquitetura e Features
 ├── docker-compose.yml       # Banco PostgreSQL
 └── README.md

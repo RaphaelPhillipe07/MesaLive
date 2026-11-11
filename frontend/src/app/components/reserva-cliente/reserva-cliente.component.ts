@@ -53,15 +53,11 @@ export class ReservaClienteComponent implements OnInit {
     this.apiService.getMesasPublicas().subscribe({
       next: (res) => this.mesasDisponiveis.set(res),
       error: () => {
-        // Fallback em desenvolvimento
-        this.mesasDisponiveis.set([
-          { id: 1, numero: 'Mesa 01', capacidade: 2, ativo: true, statusAtual: 'LIVRE' },
-          { id: 2, numero: 'Mesa 02', capacidade: 2, ativo: true, statusAtual: 'LIVRE' },
-          { id: 3, numero: 'Mesa 03', capacidade: 4, ativo: true, statusAtual: 'LIVRE' },
-          { id: 4, numero: 'Mesa 04', capacidade: 4, ativo: true, statusAtual: 'LIVRE' },
-          { id: 5, numero: 'Mesa 05', capacidade: 6, ativo: true, statusAtual: 'LIVRE' },
-          { id: 6, numero: 'Mesa 06', capacidade: 8, ativo: true, statusAtual: 'LIVRE' }
-        ]);
+        // Sem dados fictícios: o cliente precisa saber que a lista real não carregou.
+        this.mesasDisponiveis.set([]);
+        this.errorMessage.set(
+          'Não foi possível carregar as mesas disponíveis. Verifique sua conexão e tente novamente.'
+        );
       }
     });
   }

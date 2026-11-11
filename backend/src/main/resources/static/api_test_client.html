@@ -123,18 +123,7 @@
       margin-top: 10px;
       border: 1px dashed var(--muted-fg);
     }
-    .ws-connected {
-      color: green;
-      font-weight: bold;
-    }
-    .ws-disconnected {
-      color: red;
-      font-weight: bold;
-    }
   </style>
-  <!-- SockJS and Stomp JavaScript Clients -->
-  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
 
@@ -144,7 +133,7 @@
       <p style="font-size: 0.85rem; color: var(--muted-fg)">Painel Técnico de Testes e Simulações de API</p>
     </div>
     <div>
-      <span id="ws-status" class="ws-disconnected">WebSocket: Desconectado</span>
+      <span id="ws-status">Atualização: Smart Polling (8s)</span>
     </div>
   </header>
 
@@ -166,10 +155,14 @@
       </section>
 
       <section>
-        <h2>2. WebSocket Live Monitor</h2>
-        <button onclick="conectarWS()">Conectar WebSocket</button>
-        <button onclick="desconectarWS()" style="background-color: #ef4444; color: #fff;">Desconectar</button>
-        <pre id="ws-log">Mensagens em tempo real aparecerão aqui após a conexão...</pre>
+        <h2>2. Atualização do Painel (Smart Polling)</h2>
+        <p style="font-size: 0.85rem; color: var(--muted-fg)">
+          O painel do staff não usa WebSocket. Ele consulta <code>GET /api/mesas</code> a cada 8 segundos
+          enquanto a aba está visível e aplica atualizações otimistas nas ações. Use o botão abaixo para
+          simular uma leitura do mapa do salão.
+        </p>
+        <button onclick="consultarMesas()">Consultar Mapa do Salão</button>
+        <pre id="mesas-output">Resultado da consulta do mapa aparecerá aqui...</pre>
       </section>
 
       <section>
@@ -270,7 +263,6 @@
 
   <script>
     let jwtToken = localStorage.getItem("mesalive_test_token") || "";
-    let stompClient = null;
 
     if (jwtToken) {
       document.getElementById("token-box").innerText = "Token ativo: " + jwtToken.substring(0, 30) + "...";
@@ -412,43 +404,15 @@
       }
     }
 
-    // WEBSOCKET LOGIC
-    function conectarWS() {
-      desconectarWS();
-
-      const socket = new SockJS("/ws");
-      stompClient = Stomp.over(socket);
-
-      // Disable console debug logs from stomp
-      stompClient.debug = null;
-
-      stompClient.connect({}, function (frame) {
-        const statusEl = document.getElementById("ws-status");
-        statusEl.innerText = "WebSocket: Conectado";
-        statusEl.className = "ws-connected";
-        
-        document.getElementById("ws-log").innerText = "Conectado ao canal /topic/salao! Aguardando modificações...\n";
-
-        stompClient.subscribe("/topic/salao", function (message) {
-          const logEl = document.getElementById("ws-log");
-          const payload = JSON.parse(message.body);
-          logEl.innerText = `[WS Event - ${new Date().toLocaleTimeString()}]\n` + JSON.stringify(payload, null, 2) + "\n\n" + logEl.innerText;
-        });
-      }, function (error) {
-        const statusEl = document.getElementById("ws-status");
-        statusEl.innerText = "WebSocket: Erro";
-        statusEl.className = "ws-disconnected";
-      });
-    }
-
-    function desconectarWS() {
-      if (stompClient !== null) {
-        stompClient.disconnect();
-        stompClient = null;
+    // SMART POLLING: leitura do mapa do salão (mesma chamada usada pelo painel a cada 8s)
+    async function consultarMesas() {
+      try {
+        const res = await fetch("/api/mesas", { headers: getHeaders() });
+        const data = await res.json();
+        document.getElementById("mesas-output").innerText = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("mesas-output").innerText = "Erro ao consultar o mapa do salão.";
       }
-      const statusEl = document.getElementById("ws-status");
-      statusEl.innerText = "WebSocket: Desconectado";
-      statusEl.className = "ws-disconnected";
     }
   </script>
 </body>

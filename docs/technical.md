@@ -45,7 +45,7 @@ MesaLive/
 
 | Camada | Tecnologia |
 |---|---|
-| Framework | Spring Boot 3.x + Kotlin JVM 17 |
+| Framework | Spring Boot 4.x + Kotlin JVM 21 |
 | Build Tool | Gradle (Kotlin DSL) |
 | Acesso a dados | Spring Data JPA + Hibernate |
 | Banco de dados | PostgreSQL 15 |
@@ -102,6 +102,19 @@ MesaLive/
 | HTTP / REST | `/api/mesas/**` | JWT (Garçom/Gerente) | Mapa de salão administrativo detalhado |
 | HTTP / REST | `/api/reservas/{id}/status`| JWT (Garçom/Gerente) | Ações de entrada, no-show e liberar mesa |
 | HTTP / REST | `/api/usuarios` | JWT (Exclusivo Gerente) | Cadastro de novos funcionários no staff |
+
+### Contrato de Erros
+
+Todas as falhas usam o mesmo payload (`ErrorResponseDTO`: `status`, `error`, `message`, `timestamp`, `fieldErrors?`).
+
+| Status | Situação |
+|---|---|
+| `400` | Regra de negócio violada, validação de campos, corpo/parâmetro malformado |
+| `401` | Credenciais inválidas no login |
+| `403` | Autenticado sem permissão para a ação |
+| `404` | Recurso (ou endpoint) inexistente |
+| `409` | Conflito de horário na mesa |
+| `500` | Falha inesperada — a causa é logada no servidor, nunca devolvida ao cliente |
 
 ---
 

@@ -1,6 +1,7 @@
 package com.mesalive.config
 
 import com.mesalive.security.JwtAuthenticationFilter
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -18,7 +19,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    @Value("\${app.cors.allowed-origins:http://localhost:4200}") private val allowedOrigins: String
 ) {
 
     @Bean
@@ -43,8 +45,7 @@ class SecurityConfig(
                     .requestMatchers("/api/auth/login").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/mesas/publicas").permitAll()
                     
-                    // Handshake WebSocket e OpenAPI/Swagger
-                    .requestMatchers("/ws/**").permitAll()
+                    // OpenAPI/Swagger
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                     
                     // Endpoints Administrativos
@@ -64,7 +65,11 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOriginPatterns = listOf("*")
+        // Origens permitidas vem de app.cors.allowed-origins (CORS_ALLOWED_ORIGINS), nunca "*".
+        configuration.allowedOriginPatterns = allowedOrigins
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("Authorization", "Content-Type")
         configuration.allowCredentials = true
