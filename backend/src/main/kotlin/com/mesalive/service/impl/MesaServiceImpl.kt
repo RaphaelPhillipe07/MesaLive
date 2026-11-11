@@ -19,7 +19,7 @@ class MesaServiceImpl(
 
     @Transactional(readOnly = true)
     override fun listarAtivas(): List<Mesa> {
-        return mesaRepository.findAll().filter { it.ativo }
+        return mesaRepository.findByAtivoTrueOrderByNumeroAsc()
     }
 
     @Transactional(readOnly = true)

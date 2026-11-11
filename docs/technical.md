@@ -136,7 +136,14 @@ Todas as falhas usam o mesmo payload (`ErrorResponseDTO`: `status`, `error`, `me
 
 #### 4. `reserva`
 * Vincula mesas, clientes, datas e status operacionais.
-* **Campos:** `id` (PK), `mesa_id` (FK), `cliente_id` (FK), `data_hora` (Timestamp with TZ), `quantidade_pessoas` (Int), `status` (`CONFIRMADA`, `CANCELADA`, `CLIENTE_CHEGOU`, `NO_SHOW`).
+* **Campos:** `id` (PK), `mesa_id` (FK), `cliente_id` (FK), `data_hora` (Timestamp with TZ), `data_hora_fim` (Timestamp with TZ), `quantidade_pessoas` (Int), `status` (`CONFIRMADA`, `CANCELADA`, `CLIENTE_CHEGOU`, `NO_SHOW`), `criado_em`, `atualizado_em`, `version`.
+* **Constraints e índices (V3):**
+  * `ex_reserva_sem_sobreposicao` — `EXCLUDE USING gist (mesa_id WITH =, tstzrange(data_hora, data_hora_fim) WITH &&) WHERE status IN ('CONFIRMADA','CLIENTE_CHEGOU')`. Impede double booking mesmo com requisições simultâneas.
+  * `fk_reserva_mesa` / `fk_reserva_cliente` sem `ON DELETE CASCADE`: histórico não é apagado junto com mesa/cliente.
+  * `ck_reserva_pessoas` (`> 0`) e `ck_reserva_intervalo` (`data_hora_fim > data_hora`).
+  * `idx_reserva_mesa_data`, `idx_reserva_status_data`; `uq_cliente_telefone` em `cliente.telefone`.
+* **Auditoria e concorrência:** `version` (`@Version`) aplica lock otimista; `criado_em`/`atualizado_em` são preenchidos por `@PrePersist`/`@PreUpdate`.
+* **Mapa do salão:** uma única consulta (`ReservaRepository.findResumosParaPainel`) retorna mesas + reserva relevante via projeção, sem N+1 e sem carregar o histórico inteiro.
 
 ---
 
@@ -146,7 +153,8 @@ Todas as falhas usam o mesmo payload (`ErrorResponseDTO`: `status`, `error`, `me
 ```text
 com.mesalive.
 ├── config/
-│   └── SecurityConfig.kt       # Filtros JWT e permissões de rota REST
+│   ├── SecurityConfig.kt       # Filtros JWT e permissões de rota REST
+│   └── TimeConfig.kt           # Bean de Clock (relógio injetável)
 ├── controller/
 │   ├── AuthController.kt       # Rota pública de login de funcionários
 │   ├── MesaController.kt       # Endpoints de consulta de mesas (público/privado)
@@ -154,7 +162,9 @@ com.mesalive.
 │   └── UsuarioController.kt    # Cadastro de usuários (restrito ao Gerente)
 ├── domain/
 │   ├── Mesa.kt, Cliente.kt     # Entidades de persistência JPA
-│   └── Reserva.kt, Usuario.kt
+│   ├── Reserva.kt, Usuario.kt
+│   ├── ReservaTempos.kt        # Duração e tolerâncias (fonte única)
+│   └── ReservaStatusPolicy.kt  # Máquina de estados da reserva
 ├── dto/
 │   ├── AuthDTOs.kt, MesaDTOs.kt# Payloads de entrada e saída (Request/Response)
 │   ├── ReservaDTOs.kt, UsuarioDTOs.kt
@@ -171,11 +181,15 @@ com.mesalive.
 │   └── JwtAuthenticationFilter.kt# Filtro HTTP interceptador Bearer
 └── service/
     ├── Interfaces de Serviços  # Contrato de serviços de negócio
-    ├── impl/                   # Implementações dos serviços de negócio
+    ├── impl/                   # Implementações (Reserva, Mesa, Cliente, Usuario, Salon)
     └── validator/
         ├── DisponibilidadeValidator.kt# Interface de validação de disponibilidade
         └── ConflitoHorarioValidator.kt# Implementação de checagem de janela
 ```
+
+> **Testes:** unitários com JUnit 5 + MockK e integração com PostgreSQL embarcado
+> (`io.zonky.test:embedded-postgres`), sem necessidade de Docker — as migrations Flyway,
+> o `ddl-auto=validate` e o constraint de exclusão são exercitados em toda execução de `./gradlew test`.
 
 ### Frontend (Angular 18)
 ```text

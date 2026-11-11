@@ -79,6 +79,7 @@ O sistema implementa uma **Arquitetura em Camadas** com uma separação lógica 
 * **Strategy Pattern:** Lógica de validação de disponibilidade encapsulada sob a interface `DisponibilidadeValidator`.
 * **Smart Polling & Optimistic UI:** Substituição da complexidade de conexões mantidas por WebSockets por chamadas HTTP REST limpas e atualização visual local instantânea.
 * **Global Exception Handler:** Interceptador de erros centralizado no Spring Boot formatando exceções em respostas HTTP padronizadas.
+* **Integridade no banco:** constraint de exclusão (`EXCLUDE USING gist` + `btree_gist`) impede double booking mesmo com requisições simultâneas, e `ReservaStatusPolicy` restringe as transições de status válidas.
 
 ---
 

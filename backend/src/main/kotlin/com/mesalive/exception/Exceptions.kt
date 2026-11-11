@@ -1,5 +1,6 @@
 package com.mesalive.exception
 
+import com.mesalive.domain.StatusReserva
 import java.time.OffsetDateTime
 
 open class NegocioException(message: String) : RuntimeException(message)
@@ -21,5 +22,8 @@ class ConflitoReservaException(mesaId: Long, dataHora: OffsetDateTime) :
         fun paraMesa(mesaId: Long, dataHora: OffsetDateTime) = ConflitoReservaException(mesaId, dataHora)
     }
 }
+
+class TransicaoInvalidaException(de: StatusReserva, para: StatusReserva) :
+    NegocioException("Não é possível alterar o status da reserva de $de para $para.")
 
 class CredenciaisInvalidasException : NegocioException("Usuário ou senha incorretos.")

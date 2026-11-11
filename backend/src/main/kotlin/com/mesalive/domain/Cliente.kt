@@ -10,11 +10,11 @@ class Cliente(
     val id: Long? = null,
 
     @Column(nullable = false)
-    val nome: String,
+    var nome: String,
 
     @Column(nullable = false)
     val telefone: String,
 
     @Column
-    val email: String? = null
+    var email: String? = null
 )

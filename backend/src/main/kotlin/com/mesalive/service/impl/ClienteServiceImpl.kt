@@ -19,21 +19,18 @@ class ClienteServiceImpl(
 
     @Transactional
     override fun buscarOuCriarCliente(nome: String, telefone: String, email: String?): Cliente {
+        // Telefone é a identidade do cliente (garantido por uq_cliente_telefone).
         val clienteExistente = clienteRepository.findByTelefone(telefone)
         if (clienteExistente != null) {
-             val clienteAtualizado = Cliente(
-                id = clienteExistente.id,
-                nome = nome,
-                telefone = telefone,
-                email = email ?: clienteExistente.email
-            )
-            return clienteRepository.save(clienteAtualizado)
+            clienteExistente.nome = nome
+            if (!email.isNullOrBlank()) {
+                clienteExistente.email = email
+            }
+            return clienteExistente
         }
-        val novoCliente = Cliente(
-            nome = nome,
-            telefone = telefone,
-            email = email
+
+        return clienteRepository.save(
+            Cliente(nome = nome, telefone = telefone, email = email)
         )
-        return clienteRepository.save(novoCliente)
     }
 }

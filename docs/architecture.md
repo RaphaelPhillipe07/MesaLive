@@ -32,13 +32,12 @@ graph TD
 
 Para gerenciar a disponibilidade de mesas no restaurante de forma extensível, foi implementado o **Strategy Pattern**.
 
-* **Interface `DisponibilidadeValidator`:** Define um contrato simples para checagem de regras de agendamento.
+* **Interface `DisponibilidadeValidator`:** Define um contrato para checagem de regras de agendamento (`validar(mesa, dataHora, dataHoraFim)`).
 * **Classe `ConflitoHorarioValidator`:** Implementação padrão do validador de colisão de horários.
-  * **Regra da Janela de Ocupação:** Uma reserva é considerada em conflito se houver outra reserva com status `CONFIRMADA` na mesma mesa dentro de uma janela de tempo de segurança antes ou depois do horário desejado.
-  * **Fórmula de Consulta:**
-    * Início da busca: `dataHoraDesejada - janelaSegurança`
-    * Fim da busca: `dataHoraDesejada + janelaSegurança`
-    * Qualquer registro encontrado nesse intervalo dispara uma exceção `ConflitoReservaException` (HTTP 409).
+  * **Regra da sobreposição:** uma reserva ocupa o intervalo `[dataHora, dataHora + 90min)`. Há conflito quando o intervalo de uma nova reserva cruza o de uma reserva `CONFIRMADA` ou `CLIENTE_CHEGOU` na mesma mesa. Reservas encostadas (18:00–19:30 e 19:30–21:00) não conflitam.
+  * **Janelas de tempo:** as durações e tolerâncias ficam em `ReservaTempos` e são usadas tanto pela validação quanto pelo mapa do salão — antes cada um usava um número diferente.
+  * **Garantia final no banco:** o validador é a checagem antecipada (mensagem amigável, HTTP 409). A garantia contra duas requisições simultâneas é o constraint de exclusão `ex_reserva_sem_sobreposicao` (`EXCLUDE USING gist` sobre `tstzrange(data_hora, data_hora_fim)` por `mesa_id`), que transforma a corrida em violação de integridade traduzida para o mesmo 409.
+  * **Máquina de estados:** `ReservaStatusPolicy` limita as transições a `CONFIRMADA → CLIENTE_CHEGOU | NO_SHOW | CANCELADA`, `CLIENTE_CHEGOU|NO_SHOW → CANCELADA` (terminal). Estados inválidos viram HTTP 400.
 
 ---
 

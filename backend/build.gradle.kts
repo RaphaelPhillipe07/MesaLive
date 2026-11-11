@@ -48,8 +48,8 @@ dependencies {
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testImplementation("io.mockk:mockk:1.13.11")
-	testImplementation("org.testcontainers:junit-jupiter:1.19.8")
-	testImplementation("org.testcontainers:postgresql:1.19.8")
+	// Postgres embarcado: valida migrations e constraints sem depender de Docker.
+	testImplementation("io.zonky.test:embedded-postgres:2.1.0")
 }
 
 kotlin {

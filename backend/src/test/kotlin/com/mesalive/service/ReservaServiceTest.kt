@@ -39,9 +39,9 @@ class ReservaServiceTest {
         val reserva = Reserva(id = 1L, mesa = mesa, cliente = cliente, dataHora = dataHora, quantidadePessoas = 2)
 
         every { mesaService.buscarPorId(1L) } returns mesa
-        every { validator.validar(mesa, dataHora) } just Runs
+        every { validator.validar(mesa, dataHora, any()) } just Runs
         every { clienteService.buscarOuCriarCliente("João", "11999999999", any()) } returns cliente
-        every { reservaRepository.save(any<Reserva>()) } returns reserva
+        every { reservaRepository.saveAndFlush(any<Reserva>()) } returns reserva
 
         val result = reservaService.criarReserva(
             mesaId = 1L,
@@ -56,8 +56,15 @@ class ReservaServiceTest {
         assertEquals(1L, result.id)
         assertEquals("Mesa 1", result.mesa.numero)
         assertEquals("João", result.cliente.nome)
-        verify { reservaRepository.save(any<Reserva>()) }
+        verify { reservaRepository.saveAndFlush(any<Reserva>()) }
         verify { eventPublisher.publishEvent(any<ReservaAlteradaEvent>()) }
+        verify {
+            validator.validar(
+                mesa,
+                dataHora,
+                dataHora.plusMinutes(ReservaTempos.DURACAO_PADRAO_MINUTOS)
+            )
+        }
     }
 
     @Test
@@ -78,7 +85,7 @@ class ReservaServiceTest {
                 quantidadePessoas = 2
             )
         }
-        verify(exactly = 0) { reservaRepository.save(any()) }
+        verify(exactly = 0) { reservaRepository.saveAndFlush(any()) }
     }
 
     @Test
@@ -98,6 +105,28 @@ class ReservaServiceTest {
                 dataHora = dataHora,
                 quantidadePessoas = 4
             )
+        }
+        verify(exactly = 0) { reservaRepository.saveAndFlush(any()) }
+    }
+
+    @Test
+    fun `deve rejeitar transicao de status invalida`() {
+
+        val mesa = Mesa(id = 1L, numero = "Mesa 1", capacidade = 4, ativo = true)
+        val cliente = Cliente(id = 1L, nome = "João", telefone = "11999999999")
+        val reserva = Reserva(
+            id = 1L,
+            mesa = mesa,
+            cliente = cliente,
+            dataHora = OffsetDateTime.now().plusDays(1),
+            quantidadePessoas = 2,
+            status = StatusReserva.CANCELADA
+        )
+
+        every { reservaRepository.findById(1L) } returns java.util.Optional.of(reserva)
+
+        assertThrows<TransicaoInvalidaException> {
+            reservaService.atualizarStatus(1L, StatusReserva.CLIENTE_CHEGOU)
         }
         verify(exactly = 0) { reservaRepository.save(any()) }
     }
